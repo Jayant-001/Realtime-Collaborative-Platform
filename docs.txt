@@ -1,0 +1,24 @@
+pnpm --filter web add -D  tailwind
+
+// add to main(global) workspace
+pnpm -w add -D tailwind
+
+
+TODO: Add logger
+
+// send to all users in the room but `not self`
+socket.in(userRoomId).emit(SocketActions.DISCONNECTED, {
+    socketId: socket.id,
+    username: this.socketUsernameMap[socket.id],
+});
+
+
+// send to all present in the room including me
+this._io.to(roomId).emit(SocketActions.JOINED, {
+    clients,
+    username,
+    socketId: socket.id,
+});
+
+
+socket.to vs socket.in
