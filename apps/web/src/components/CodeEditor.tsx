@@ -28,10 +28,10 @@ export default function CodeEditor() {
     };
 
     return (
-        <div className=" rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gray-800 px-4 py-2">
+        <div className=" rounded-lg shadow-sm overflow-hidden h-full">
+            <div className="bg-gray-800 px-4 py-2 flex justify-between">
                 <select
-                    value="cpp"
+                    value={state.selectedLanguage}
                     className="bg-gray-700 text-white rounded px-2 py-1 text-sm"
                     onChange={(e) => state.setSelectedLanguage(e.target.value)}
                 >
@@ -48,9 +48,11 @@ export default function CodeEditor() {
                         </option>
                     ))}
                 </select>
+                <button className="px-2 h-full py-1 bg-orange-500 rounded-md text-white active:opacity-50">
+                    RUN
+                </button>
             </div>
             <Editor
-                // ref={editorRef}
                 height={"100%"}
                 language={state.selectedLanguage}
                 defaultLanguage={state.selectedLanguage}
