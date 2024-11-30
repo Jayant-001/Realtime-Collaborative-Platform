@@ -10,6 +10,8 @@ import logger from "@repo/logger/index.js";
 import { createExecuteRouteRoutes } from "./routes/execute-code.route.js";
 import BullMQService from "./services/bullmq.service.js";
 import { newRedisConfig } from "./config/redis.config.js";
+import { createAdapter } from "@socket.io/redis-adapter";
+import Redis from "ioredis";
 
 dotenv.config();
 
@@ -19,11 +21,14 @@ class App {
     constructor() {
         this.app = express();
         this.httpServer = createServer(this.app);
+        const pubClient = new Redis(newRedisConfig);
+        const subClient = pubClient.duplicate();
         this.io = new Server(this.httpServer, {
             cors: {
                 origin: "*",
                 methods: ["GET", "POST"],
             },
+            adapter: createAdapter(pubClient, subClient),
         });
 
         this.redisService = new RedisService();

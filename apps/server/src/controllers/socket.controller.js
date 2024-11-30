@@ -2,6 +2,7 @@ import UserRepository from "../repositories/user.repository.js";
 import RoomRepository from "../repositories/room.repository.js";
 import { SocketActions } from "../utils/socket-actions.js";
 import logger from "@repo/logger";
+import Repository from "../repositories/repository.js";
 
 class SocketController {
     constructor(io, redisService) {
@@ -9,105 +10,87 @@ class SocketController {
         this.redisService = redisService;
         this.userRepository = new UserRepository(redisService);
         this.roomRepository = new RoomRepository(redisService);
+        this.repository = new Repository(redisService);
     }
 
     initListeners() {
         this.io.on("connection", (socket) => {
             logger.info("New socket connected:", { socketId: socket.id });
 
-            socket.on(SocketActions.JOIN, async (data) => {
-                const { roomId, username } = data;
-                logger.info(`New Join request: `, data);
-
-                // Register user in Redis
-                await this.userRepository.registerUser(
-                    socket.id,
-                    username,
-                    roomId
-                );
-                await this.roomRepository.addUserToRoom(roomId, socket.id);
+            socket.on(SocketActions.JOIN, async ({ roomId, username }) => {
+                logger.info(`New Join request: `, { roomId, username });
 
                 // Join room
                 socket.join(roomId);
 
-                // Get room members
-                const roomMembers =
-                    await this.roomRepository.getRoomMembers(roomId);
-
-                // console.log("Room members :->>", roomMembers);
-                // const tempData = Array.from(
-                //     this.io.sockets.adapter.rooms.get(roomId) || []
-                // ).map((socketId) => ({
-                //     socketId,
-                //     // username: this.socketUsernameMap[socketId],
-                // }));
-
-                // console.log("Temp data : ->>>", tempData);
-
-                const clients = await Promise.all(
-                    roomMembers.map(async (socketId) => {
-                        const userData =
-                            await this.userRepository.getUserBySocketId(
-                                socketId
-                            );
-                        return {
-                            socketId,
-                            username: userData?.username,
-                        };
-                    })
+                // Register user in Redis
+                await this.repository.addUserToRoom(
+                    roomId,
+                    socket.id,
+                    username
                 );
 
-                // console.log("Clients, ", clients);
-
-                // Emit to the newly connected client
-                socket.emit(SocketActions.JOINED, {
-                    clients, // Send the list of clients to the newly connected user
-                    username,
+                // Notify other users in the room
+                socket.to(roomId).emit(SocketActions.JOINED, {
                     socketId: socket.id,
+                    username,
                 });
 
-                // Broadcast to room
-                socket.in(roomId).emit(SocketActions.JOINED, {
-                    clients,
-                    username,
-                    socketId: socket.id,
-                });
+                // Get room members
+                const users =
+                    await this.repository.getRoomUsersByRoomId(roomId);
+
+                socket.in(roomId).emit(SocketActions.ROOM_USERS, { users });
+                socket.emit(SocketActions.ROOM_USERS, { users });
             });
 
             socket.on("disconnecting", async () => {
-                const userData = await this.userRepository.getUserBySocketId(
+                const roomId = await this.repository.getRoomIdBySocketId(
                     socket.id
                 );
 
-                if (userData) {
-                    const { roomId } = userData;
+                const username = await this.repository.getUsernameBySocketId(
+                    socket.id
+                );
 
-                    // Remove from room
-                    await this.roomRepository.removeUserFromRoom(
-                        roomId,
-                        socket.id
-                    );
+                await this.repository.deleteUserBySocketId(socket.id);
 
-                    // Notify room
-                    socket.to(roomId).emit(SocketActions.DISCONNECTED, {
-                        socketId: socket.id,
-                        username: userData.username,
-                    });
-
-                    // Remove user from tracking
-                    await this.userRepository.removeUser(socket.id);
-                }
+                socket.to(roomId).emit(SocketActions.DISCONNECTED, {
+                    socketId: socket.id,
+                    username,
+                });
             });
+
+            socket.on(
+                SocketActions.SYNC_USER,
+                async ({ socketId, code, text }) => {
+                    socket
+                        .to(socketId)
+                        .emit(SocketActions.CODE_CHANGE, { code });
+                    socket
+                        .to(socketId)
+                        .emit(SocketActions.TEXT_CHANGE, { text });
+                }
+            );
 
             // Code Sync Handlers
             socket.on(SocketActions.CODE_CHANGE, async ({ roomId, code }) => {
                 socket.to(roomId).emit(SocketActions.CODE_CHANGE, { code });
             });
 
-            socket.on(SocketActions.SYNC_CODE, async (data) => {
-                const { socketId, code } = data;
-                this.io.to(socketId).emit(SocketActions.SYNC_CODE, { code });
+            // Text Sync Handlers
+            socket.on(SocketActions.TEXT_CHANGE, async ({ roomId, text }) => {
+                socket.to(roomId).emit(SocketActions.TEXT_CHANGE, { text });
             });
+
+            socket.on(
+                SocketActions.SYNC_CODE,
+                async ({ socketId, code, text }) => {
+                    this.io
+                        .to(socketId)
+                        .emit(SocketActions.SYNC_CODE, { code, text });
+                }
+            );
 
             // Message Handling with Redis Pub/Sub
             socket.on(SocketActions.MESSAGE, async (message) => {
@@ -115,6 +98,22 @@ class SocketController {
                     "MESSAGES",
                     JSON.stringify(message)
                 );
+            });
+
+            socket.on(SocketActions.LEAVED, async ({ roomId }) => {
+                logger.info(`Sending leave message to ${roomId}`);
+
+                const username = await this.repository.getUsernameBySocketId(
+                    socket.id
+                );
+
+                await this.repository.deleteUserBySocketId(socket.id);
+
+                socket.leave(roomId);
+                this.io.to(roomId).emit(SocketActions.LEAVED, {
+                    socketId: socket.id,
+                    username,
+                });
             });
         });
 

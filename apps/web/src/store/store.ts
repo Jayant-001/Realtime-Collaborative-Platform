@@ -5,11 +5,13 @@ interface IStore {
     code: string;
     input: string;
     selectedLanguage: string;
+    isLoading: boolean;
     // Setters
     setCode: (code: string) => void;
     setInput: (input: string) => void;
     setSelectedLanguage: (language: string) => void;
     reset: () => void;
+    setIsLoading: (value: boolean) => void;
 }
 
 export const useStore = create<IStore>((set) => ({
@@ -17,6 +19,7 @@ export const useStore = create<IStore>((set) => ({
     input: "",
     selectedLanguage: "cpp",
     userDetails: null,
+    isLoading: false,
 
     // Setters
     setCode: (code) => set({ code }),
@@ -34,4 +37,5 @@ export const useStore = create<IStore>((set) => ({
             input: "",
             selectedLanguage: "javascript",
         }),
+    setIsLoading: (value: boolean) => set({ isLoading: value }),
 }));

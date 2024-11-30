@@ -16,7 +16,8 @@ interface SocketState {
     code: string;
     language: string;
     username: string | null;
-    connectSocket: (url: string) => void;
+    isConnected: boolean;
+    connectSocket: () => void;
     disconnectSocket: () => void;
     sendMessage: (message: string) => void;
     joinRoom: (room: string, username: string) => void;
@@ -25,9 +26,11 @@ interface SocketState {
     setLanguage: (lang: string) => void;
     syncCode: (code: string) => void;
     setUsername: (username: string) => void;
+    setIsConnected: (value: boolean) => void;
+    disconnect: () => void;
 }
 
-export const useSocketStore = create<SocketState>((set) => ({
+export const useSocketStore = create<SocketState>((set, get) => ({
     socket: null,
     messages: [],
     currentRoom: null,
@@ -35,15 +38,30 @@ export const useSocketStore = create<SocketState>((set) => ({
     code: "",
     language: "",
     username: null,
+    isConnected: false,
 
     // Initialize socket connection
-    connectSocket: (url: string) => {
-        const socket = io(url, {
-            forceNew: true,
-            timeout: 10000,
+    connectSocket: () => {
+        const socket = io("http://localhost:4000", {
+            // forceNew: true,
+            // timeout: 10000,
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
             transports: ["websocket"],
         });
-        set({ socket });
+
+        socket.on("connect", () => {
+            toast.success("Socket connected");
+            set({ socket, isConnected: true });
+        });
+
+        socket.on("disconnect", () => {
+            toast.error("Socket disconnected");
+            set({ isConnected: false });
+        });
+
+        // set({ socket });
 
         socket.on("connect_error", (err) => {
             alert(err.message);
@@ -61,19 +79,23 @@ export const useSocketStore = create<SocketState>((set) => ({
         });
 
         // Listen for room join success
-        socket.on(SocketActions.JOINED, ({ clients, username, socketId }) => {
-            const currentSocketId = useSocketStore.getState().socket?.id;
+        socket.on(
+            SocketActions.JOINED,
+            ({ clients, username, socketId, roomId }) => {
+                const currentSocketId = useSocketStore.getState().socket?.id;
 
-            console.log({ clients, username, socketId });
-            set({ clients: clients });
-            if (currentSocketId != socketId) {
-                // set({ currentRoom: room });
-                toast.success(`${username} joined`);
+                console.log(clients);
+                // // console.log({ clients, username, socketId });
+                // set({ clients: clients, currentRoom: roomId });
+                // if (currentSocketId != socketId) {
+                //     // set({ currentRoom: room });
+                //     toast.success(`${username} joined`);
 
-                const code = useStore.getState().code;
-                socket.emit(SocketActions.SYNC_CODE, { socketId, code });
+                //     const code = useStore.getState().code;
+                //     socket.emit(SocketActions.SYNC_CODE, { socketId, code });
+                // }
             }
-        });
+        );
 
         // Listen event: when any user disconnected from the room
         socket.on(SocketActions.DISCONNECTED, ({ socketId, username }) => {
@@ -96,6 +118,14 @@ export const useSocketStore = create<SocketState>((set) => ({
             const setCode = useStore.getState().setCode;
             setCode(code);
         });
+    },
+
+    disconnect: () => {
+        const { socket } = get();
+        if (socket) {
+            socket.disconnect();
+            set({ socket: null, isConnected: false });
+        }
     },
 
     // Cleanup and disconnect socket
@@ -140,15 +170,17 @@ export const useSocketStore = create<SocketState>((set) => ({
 
     // Join a specific room
     joinRoom: (room: string, username: string) => {
-        set((state) => {
-            if (state.socket) {
-                state.socket.emit(SocketActions.JOIN, {
-                    roomId: room,
-                    username,
-                });
-            }
-            return { currentRoom: room };
+        const { socket } = get();
+        socket?.emit(SocketActions.JOIN, {
+            roomId: room,
+            username,
         });
+        set({ currentRoom: room });
+        // set((state) => {
+        //     if (state.socket) {
+        //     }
+        //     return { currentRoom: room };
+        // });
     },
 
     // Add a message directly
@@ -168,5 +200,9 @@ export const useSocketStore = create<SocketState>((set) => ({
 
     setUsername: (username: string) => {
         set({ username });
+    },
+
+    setIsConnected: (value: boolean) => {
+        set({ isConnected: value });
     },
 }));

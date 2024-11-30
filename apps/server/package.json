@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@repo/logger": "workspace:*",
+    "@socket.io/redis-adapter": "^8.3.0",
     "bullmq": "^5.29.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

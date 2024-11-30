@@ -1,17 +1,14 @@
 "use client";
-import React, { useState } from "react";
-import {
-    Code,
-    MessageCircle,
-    MessageSquareCode,
-    Settings,
-    Users,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Code, LoaderCircle, MessageSquareCode, Users } from "lucide-react";
 import Split from "react-split";
 import CodeEditorSection from "@/components/code-editor/CodeEditorSection";
 import TextEditorSection from "@/components/text-editor/TextEditorSection";
 import GroupChatSection from "@/components/group-chat/GroupChatSection";
-// import CodeEditor from "@/components/CodeEditor";
+import { useSocketStore } from "@/store/useSocketStore";
+import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
+import ClientsList from "@/components/ClientsList";
 
 // Type definitions for type safety and extensibility
 interface User {
@@ -27,74 +24,71 @@ interface TabConfig {
     component: React.ComponentType<{}>;
 }
 
-// Sample Tab Components (easily extendable)
-const ChatTab: React.FC = () => (
-    <div className=" bg-white h-full">
-        {/* <h2 className="text-xl font-bold mb-4">Group Chat</h2> */}
-        {/* <div className="space-y-4 h-full"> */}
-        {/* <CodeEditor /> */}
-        {/* </div> */}
-    </div>
-);
-
-const MembersTab: React.FC = () => (
-    <div className="p-4 bg-white h-full">
-        <h2 className="text-xl font-bold mb-4">Room Members</h2>
-        <div className="space-y-2">
-            <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-full"></div>
-                <span>John Doe</span>
-            </div>
-            <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-500 rounded-full"></div>
-                <span>Jane Smith</span>
-            </div>
-        </div>
-    </div>
-);
-
-const SettingsTab: React.FC = () => (
-    <div className="p-4 bg-white h-full w-full">
-        <h2 className="text-xl font-bold mb-4">Room Settings</h2>
-        <div className="space-y-4">
-            <div>
-                <label className="block mb-2">Room Name</label>
-                <input
-                    type="text"
-                    placeholder="Enter room name"
-                    className="w-full p-2 border rounded"
-                />
-            </div>
-        </div>
-    </div>
-);
-
 // Main Application Component
 const RoomApplication: React.FC = () => {
     // Mock user data (in real app, this would come from backend/context)
     const users: User[] = [
-        { id: "1", username: "John Doe" },
-        { id: "2", username: "Jane Smith" },
-        { id: "3", username: "Alice Johnson" },
-        { id: "4", username: "Bob Williams" },
+        {
+            id: "1",
+            username: "John Doe",
+            avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Emery",
+        },
+        {
+            id: "2",
+            username: "Jane Smith",
+            avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
+        },
+        {
+            id: "3",
+            username: "Alice Johnson",
+            avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
+        },
+        {
+            id: "4",
+            username: "Bob Williams",
+            avatar: "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
+        },
     ];
+
+    const { joinRoom, socket, connectSocket } = useSocketStore.getState();
+
+    const searchParams = useSearchParams();
+
+    // Access the query parameters
+    const room = searchParams.get("room"); // Gets the 'room' query param
+    const username = searchParams.get("username"); // Gets the 'username' query param
+
+    useEffect(() => {
+       
+        // if (room && username && socket) {
+        //     console.log("initiating join room", room, username);
+        //     joinRoom(room || "default", username || "default");
+        // }
+        // else {
+        //     toast.error("Can't find room or username");
+        // }
+    }, [room, username, socket]);
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const { clients } = useSocketStore.getState();
 
     // Configurable Tabs (easily extensible)
     const tabs: TabConfig[] = [
         {
-            id: "chat",
+            id: "code-editor",
             label: "Code Editor",
             icon: <Code size={16} />,
             component: CodeEditorSection,
         },
         {
-            id: "members",
+            id: "text-editor",
             label: "Text Editor",
             icon: <Users size={16} />,
             component: TextEditorSection,
         },
         {
-            id: "settings",
+            id: "group-chat",
             label: "Group Chat",
             icon: <MessageSquareCode size={16} />,
             component: GroupChatSection,
@@ -106,64 +100,96 @@ const RoomApplication: React.FC = () => {
 
     // Find the active tab's component
     const ActiveTabComponent =
-        tabs.find((tab) => tab.id === activeTabId)?.component || ChatTab;
+        tabs.find((tab) => tab.id === activeTabId)?.component ||
+        CodeEditorSection;
 
     return (
-        <div className="flex h-screen overflow-hidden">
-            <Split
-                sizes={[10, 75]}
-                direction="horizontal"
-                className="flex flex-row w-full"
-                cursor="col-resize"
-                gutterSize={10}
-                // minSize={100}
-            >
-                {/* Fixed Left Sidebar - User List */}
-                <div className="w-[100px] bg-gray-100 p-2 overflow-y-auto border-r">
-                    <h3 className="text-sm font-bold mb-2 text-center">
-                        Users
-                    </h3>
-                    {users.map((user) => (
-                        <div
-                            key={user.id}
-                            className="text-xs py-1 text-center truncate hover:bg-gray-200 rounded"
-                        >
-                            {user.username}
+        <>
+            <div className="flex h-screen overflow-hidden">
+                <Split
+                    sizes={[12, 75]}
+                    direction="horizontal"
+                    className="flex flex-row w-full"
+                    cursor="col-resize"
+                    gutterSize={10}
+                    // minSize={100}
+                >
+                    {/* Fixed Left Sidebar - User List */}
+                    <div className=" bg-gray-100 p-2 overflow-y-auto border-r flex flex-col justify-between">
+                        <div className="">
+                            <h3 className="text-lg font-bold mb-2 text-center">
+                                Live Users
+                            </h3>
+                            {/* <div className="space-y-2">
+                                {users.map((user) => (
+                                    <li
+                                        key={user.id}
+                                        className="flex justify-center items-center space-x-2 p-2 px-4 bg-white rounded-lg shadow-md hover:bg-gray-50 transition-all"
+                                    >
+                                        <img
+                                            src={user.avatar!}
+                                            alt={user.username}
+                                            // width={8}
+                                            // height={8}
+                                            className="w-8 h-8 rounded-full"
+                                        />
+                                        <span className="text-base text-gray-800">
+                                            {user.username.split(" ")[0]}
+                                        </span>
+                                    </li>
+                                ))}
+                            </div> */}
+                            <ClientsList />
                         </div>
-                    ))}
-                </div>
+                        <div>
+                            <div className="flex flex-col justify-center items-center gap-3">
+                                <button className="text-white bg-black rounded-md active:opacity-70 px-2 py-2 w-full">
+                                    Copy Room ID
+                                </button>
+                                <button className="text-white bg-red-700 rounded-md active:opacity-70 px-2 py-2 w-full">
+                                    Leave
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-                {/* Dynamic Right Content Area */}
-                <div className="flex-1 flex flex-col w-full">
-                    {/* Tab Navigation */}
-                    <div className="flex border-b">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTabId(tab.id)}
-                                className={`
+                    {/* Dynamic Right Content Area */}
+                    <div className="flex-1 flex flex-col w-full">
+                        {/* Tab Navigation */}
+                        <div className="flex border-b">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTabId(tab.id)}
+                                    className={`
                                 px-4 py-2 flex items-center gap-2 
                                 ${
                                     activeTabId === tab.id
                                         ? "bg-blue-100 border-b-2 border-blue-500 text-blue-600"
                                         : "hover:bg-gray-100"
                                 }
-                    transition-all duration-200
-                    `}
-                            >
-                                {tab.icon}
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
+                                transition-all duration-200
+                                `}
+                                >
+                                    {tab.icon}
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Dynamic Tab Content */}
-                    <div className="flex-1 overflow-auto">
-                        <ActiveTabComponent />
+                        {/* Dynamic Tab Content */}
+                        <div className="flex-1 overflow-auto">
+                            <ActiveTabComponent />
+                        </div>
                     </div>
+                </Split>
+            </div>
+            {isLoading && (
+                <div className="fixed inset-0 flex items-center justify-center backdrop-blur-lg">
+                    <LoaderCircle className="w-20 h-20 spin-icon" />
                 </div>
-            </Split>
-        </div>
+            )}
+        </>
     );
 };
 

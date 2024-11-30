@@ -19,10 +19,11 @@ const TextEditorSection = () => {
     return (
         <div className="h-full">
             <ReactQuill
+                placeholder="Start typing here..."
                 theme="snow"
                 value={value}
                 onChange={setValue}
-                className="h-full"
+                className="h-[92%]"
             />
         </div>
     );

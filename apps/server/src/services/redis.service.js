@@ -34,6 +34,10 @@ class RedisService {
         return await this.client.get(key);
     }
 
+    async exists(key) {
+        return await this.client.exists(key);
+    }
+
     async del(key) {
         await this.client.del(key);
     }
