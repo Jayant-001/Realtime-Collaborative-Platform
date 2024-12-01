@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TabConfig } from "../utils/types";
-import { Code, LoaderCircle, MessageSquareCode, Users } from "lucide-react";
+import { Code, MessageSquareCode, Users } from "lucide-react";
 import CodeEditorSection from "../components/code-editor-section/CodeEditor-section";
 import TextEditorSection from "../components/text-editor-section/TextEditorSection";
 import GroupChatSection from "../components/group-chat-section/GroupChatSection";
@@ -71,25 +71,6 @@ const EditorPage = () => {
                             <h3 className="text-lg font-bold mb-2 text-center">
                                 Live Users
                             </h3>
-                            {/* <div className="space-y-2">
-                        {users.map((user) => (
-                            <li
-                                key={user.id}
-                                className="flex justify-center items-center space-x-2 p-2 px-4 bg-white rounded-lg shadow-md hover:bg-gray-50 transition-all"
-                            >
-                                <img
-                                    src={user.avatar!}
-                                    alt={user.username}
-                                    // width={8}
-                                    // height={8}
-                                    className="w-8 h-8 rounded-full"
-                                />
-                                <span className="text-base text-gray-800">
-                                    {user.username.split(" ")[0]}
-                                </span>
-                            </li>
-                        ))}
-                    </div> */}
                             <ClientsList />
                         </div>
                         <div>

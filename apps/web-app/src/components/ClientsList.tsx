@@ -1,6 +1,7 @@
 import { useSocket } from "../context/SocketContext";
 
 const ClientsList = () => {
+    // TODO: Remove hard coded profile icon
     const avatar = "https://api.dicebear.com/9.x/adventurer/svg?seed=Emery";
     const { users } = useSocket();
 
@@ -14,8 +15,6 @@ const ClientsList = () => {
                     <img
                         src={avatar}
                         alt={user.username}
-                        // width={8}
-                        // height={8}
                         className="w-8 h-8 rounded-full"
                     />
                     <span className="text-base text-gray-800">

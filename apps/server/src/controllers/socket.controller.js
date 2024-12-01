@@ -1,5 +1,3 @@
-import UserRepository from "../repositories/user.repository.js";
-import RoomRepository from "../repositories/room.repository.js";
 import { SocketActions } from "../utils/socket-actions.js";
 import logger from "@repo/logger";
 import Repository from "../repositories/repository.js";
@@ -8,8 +6,6 @@ class SocketController {
     constructor(io, redisService) {
         this.io = io;
         this.redisService = redisService;
-        this.userRepository = new UserRepository(redisService);
-        this.roomRepository = new RoomRepository(redisService);
         this.repository = new Repository(redisService);
     }
 

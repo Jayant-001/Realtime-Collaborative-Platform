@@ -1,4 +1,3 @@
-// context/SocketContext.tsx
 import React, {
     createContext,
     useContext,
@@ -80,7 +79,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     }, [code, text]);
 
     const connectSocket = () => {
-        const socket = io("http://localhost:4000", {
+        const socket = io("http://localhost:4000", {  // TODO: Update code to read URL from env
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
