@@ -212,6 +212,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      bullmq:
+        specifier: ^5.29.1
+        version: 5.29.1
       ioredis:
         specifier: ^5.4.1
         version: 5.4.1

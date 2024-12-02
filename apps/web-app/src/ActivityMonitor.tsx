@@ -1,7 +1,6 @@
-import React, { act, useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { IActivityLog } from "./utils/types";
 import { useSocket } from "./context/SocketContext";
-import toast from "react-hot-toast";
 
 type Props = {
     children: React.ReactNode;
