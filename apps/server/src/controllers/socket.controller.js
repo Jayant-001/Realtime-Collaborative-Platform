@@ -36,8 +36,26 @@ class SocketController {
                 const users =
                     await this.repository.getRoomUsersByRoomId(roomId);
 
+                // Getting code and text from the DB
+                const code = await this.repository.getRoomCode(roomId);
+                const text = await this.repository.getRoomText(roomId);
+                const messages = await this.repository.getRoomMssages(roomId);
+                const input = await this.repository.getRoomCodeInput(roomId);
+                const language =
+                    await this.repository.getRoomCodeLanguage(roomId);
+                const activities =
+                    await this.repository.getRoomActivities(roomId);
+
                 socket.in(roomId).emit(SocketActions.ROOM_USERS, { users });
-                socket.emit(SocketActions.ROOM_USERS, { users });
+                socket.emit(SocketActions.SYNC_USER, {
+                    users,
+                    code,
+                    text,
+                    messages,
+                    input,
+                    language,
+                    activities,
+                });
             });
 
             socket.on("disconnecting", async () => {
@@ -57,43 +75,70 @@ class SocketController {
                 });
             });
 
-            socket.on(
-                SocketActions.SYNC_USER,
-                async ({ socketId, code, text }) => {
-                    socket
-                        .to(socketId)
-                        .emit(SocketActions.CODE_CHANGE, { code });
-                    socket
-                        .to(socketId)
-                        .emit(SocketActions.TEXT_CHANGE, { text });
-                }
-            );
+            // socket.on(
+            //     SocketActions.SYNC_USER,
+            //     async ({ socketId, code, text }) => {
+            //         socket
+            //             .to(socketId)
+            //             .emit(SocketActions.CODE_CHANGE, { code });
+            //         socket
+            //             .to(socketId)
+            //             .emit(SocketActions.TEXT_CHANGE, { text });
+            //     }
+            // );
 
             // Code Sync Handlers
             socket.on(SocketActions.CODE_CHANGE, async ({ roomId, code }) => {
+                await this.repository.setRoomCode(roomId, code);
                 socket.to(roomId).emit(SocketActions.CODE_CHANGE, { code });
             });
 
             // Text Sync Handlers
             socket.on(SocketActions.TEXT_CHANGE, async ({ roomId, text }) => {
+                await this.repository.setRoomText(roomId, text);
                 socket.to(roomId).emit(SocketActions.TEXT_CHANGE, { text });
             });
 
             socket.on(
-                SocketActions.SYNC_CODE,
-                async ({ socketId, code, text }) => {
-                    this.io
-                        .to(socketId)
-                        .emit(SocketActions.SYNC_CODE, { code, text });
+                SocketActions.LANGUAGE_CHANGE,
+                async ({ roomId, language }) => {
+                    await this.repository.setRoomCodeLanguage(roomId, language);
+                    socket
+                        .to(roomId)
+                        .emit(SocketActions.LANGUAGE_CHANGE, { language });
                 }
             );
 
+            socket.on(SocketActions.INPUT_CHANGE, async ({ roomId, input }) => {
+                await this.repository.setRoomCodeInput(roomId, input);
+                socket.to(roomId).emit(SocketActions.INPUT_CHANGE, { input });
+            });
+
+            // socket.on(
+            //     SocketActions.SYNC_CODE,
+            //     async ({ socketId, code, text }) => {
+            //         this.io
+            //             .to(socketId)
+            //             .emit(SocketActions.SYNC_CODE, { code, text });
+            //     }
+            // );
+
             // Message Handling with Redis Pub/Sub
-            socket.on(SocketActions.MESSAGE, async (message) => {
-                await this.redisService.publish(
-                    "MESSAGES",
-                    JSON.stringify(message)
+            socket.on(SocketActions.SEND_MESSAGE, async (message) => {
+                await this.repository.addRoomMessage(message.roomId, message);
+                this.io
+                    .to(message.roomId)
+                    .emit(SocketActions.SEND_MESSAGE, message);
+            });
+
+            socket.on(SocketActions.ACTIVITY_CHANGE, async (activity) => {
+                await this.repository.addRoomActivity(
+                    activity.roomId,
+                    activity
                 );
+                this.io
+                    .to(activity.roomId)
+                    .emit(SocketActions.ACTIVITY_CHANGE, activity);
             });
 
             socket.on(SocketActions.LEAVED, async ({ roomId }) => {
@@ -111,11 +156,6 @@ class SocketController {
                     username,
                 });
             });
-        });
-
-        // Redis Pub/Sub Message Listener
-        this.redisService.subscribe("MESSAGES", (message) => {
-            this.io.emit(SocketActions.MESSAGE, JSON.parse(message));
         });
     }
 }

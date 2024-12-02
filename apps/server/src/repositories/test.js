@@ -1,7 +1,9 @@
 import RedisService from "../services/redis.service.js";
 import Repository from "./repository.js";
+import Redis from "ioredis";
 
 const redisService = new RedisService();
+const redisClient = new Redis();
 
 const repository = new Repository(redisService);
 
@@ -28,9 +30,18 @@ const user4 = { socketId: "socket4", username: "user 4" };
     // console.log(users1);
     // console.log(users2);
 
-    console.log(await repository.getRoomUsersByRoomId("room1"));
-    console.log(await repository.deleteUserBySocketId("socket2"));
-    console.log(await repository.getRoomUsersByRoomId("room1"));
+    // console.log(await repository.getRoomUsersByRoomId("room1"));
+    // console.log(await repository.deleteUserBySocketId("socket2"));
+    // console.log(await repository.getRoomUsersByRoomId("room1"));
 
-    console.log("Data added");
+    // console.log("Data added");
+
+    const roomId = "49fe9077-4067-458f-ba90-be3f01f13513";
+    const roomKey = `room:${roomId}:messages`;
+
+    const data = await repository.getRoomMssages(roomId);
+    console.log(data);
+
+    // data.forEach(d => console.log(JSON.parse(d)))
+    // console.log( data);
 })();

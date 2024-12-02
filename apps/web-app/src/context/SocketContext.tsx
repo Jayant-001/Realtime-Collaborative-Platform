@@ -9,6 +9,8 @@ import { Socket } from "socket.io-client";
 import { io } from "socket.io-client";
 import { SocketActions } from "../utils/SocketActions";
 import toast from "react-hot-toast";
+import { IActivityLog, IMessage } from "../utils/types";
+import { STARTER_CODE } from "../utils/constants";
 
 interface IClient {
     socketId: string;
@@ -17,7 +19,7 @@ interface IClient {
 
 interface SocketContextType {
     socket: Socket | null;
-    messages: string[];
+    messages: IMessage[];
     currentRoom: string | null;
     users: IClient[];
     code: string;
@@ -27,11 +29,12 @@ interface SocketContextType {
     text: string;
     input: string;
     output: string;
+    activities: IActivityLog[];
     connectSocket: () => void;
     disconnectSocket: () => void;
-    sendMessage: (message: string) => void;
+    sendMessage: (message: IMessage) => void;
     joinRoom: (room: string, username: string) => void;
-    addMessage: (message: string) => void;
+    addMessage: (message: IMessage) => void;
     setCode: (code: string) => void;
     setLanguage: (lang: string) => void;
     syncCode: (code: string) => void;
@@ -42,6 +45,12 @@ interface SocketContextType {
     syncText: (text: string) => void;
     setInput: (text: string) => void;
     setOutput: (text: string) => void;
+    setMessages: (messages: IMessage[]) => void;
+    syncLanguage: (language: string) => void;
+    syncInput: (input: string) => void;
+    setActivities: (activity: IActivityLog[]) => void;
+    addActivity: (activity: IActivityLog) => void;
+    sendActivity: (activity: IActivityLog) => void;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -58,16 +67,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
     const [socket, setSocket] = useState<Socket | null>(null);
-    const [messages, setMessages] = useState<string[]>([]);
+    const [messages, setMessages] = useState<IMessage[]>([]);
     const [users, setUsers] = useState<IClient[]>([]);
     const [currentRoom, setCurrentRoom] = useState<string | null>(null);
-    const [code, setCode] = useState<string>("");
-    const [language, setLanguage] = useState<string>("");
+    const [code, setCode] = useState<string>(STARTER_CODE.cpp);
+    const [language, setLanguage] = useState<string>("cpp");
     const [username, setUsername] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState<boolean>(false);
     const [text, setText] = useState<string>("");
     const [input, setInput] = useState<string>("");
     const [output, setOutput] = useState<string>("");
+    const [activities, setActivities] = useState<IActivityLog[]>([]);
 
     const codeRef = useRef(code); // Create a ref to store the latest code
     const textRef = useRef(text); // Create a ref to store the latest text
@@ -79,7 +89,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     }, [code, text]);
 
     const connectSocket = () => {
-        const socket = io("http://localhost:4000", {  // TODO: Update code to read URL from env
+        const socket = io("http://localhost:4000", {
+            // TODO: Update code to read URL from env
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
@@ -106,17 +117,35 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             console.log(err);
         });
 
-        socket.on("chat_message", (message: string) => {
-            setMessages((prevMessages) => [...prevMessages, message]);
+        socket.on(SocketActions.SEND_MESSAGE, (message) => {
+            // console.log("RECEIVED message from socket: ", message);
+            addMessage(message);
         });
 
-        socket.on(SocketActions.JOINED, ({ username, socketId }) => {
+        socket.on(SocketActions.ACTIVITY_CHANGE, (activity) => {
+            addActivity(activity);
+        });
+
+        socket.on(
+            SocketActions.SYNC_USER,
+            ({ users, code, text, messages, input, language, activities }) => {
+                setUsers(users);
+                if (code != null) setCode(code);
+                if (input != null) setInput(input);
+                if (language != null) setLanguage(language);
+                setText(text);
+                setMessages(messages);
+                setActivities(activities);
+            }
+        );
+
+        socket.on(SocketActions.JOINED, ({ username }) => {
             toast.success(`${username} joined`);
-            socket.emit(SocketActions.SYNC_USER, {
-                socketId,
-                code: codeRef.current,
-                text: textRef.current,
-            });
+            // socket.emit(SocketActions.SYNC_USER, {
+            //     socketId,
+            //     code: codeRef.current,
+            //     text: textRef.current,
+            // });
         });
 
         socket.on(SocketActions.DISCONNECTED, ({ socketId, username }) => {
@@ -139,17 +168,25 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             }
         });
 
-        socket.on(SocketActions.SYNC_CODE, ({ code }) => {
-            console.log("Received Code sync ", code);
-            setCode(code);
-        });
+        // socket.on(SocketActions.SYNC_CODE, ({ code }) => {
+        //     console.log("Received Code sync ", code);
+        //     setCode(code);
+        // });
 
         socket.on(SocketActions.TEXT_CHANGE, ({ text }) => {
             setText(text);
         });
 
+        socket.on(SocketActions.LANGUAGE_CHANGE, ({ language }) => {
+            setLanguage(language);
+        });
+
+        socket.on(SocketActions.INPUT_CHANGE, ({ input }) => {
+            setInput(input);
+        });
+
         socket.on(SocketActions.ROOM_USERS, ({ users }) => {
-            console.log("Users: ", users);
+            // console.log("Users: ", users, code, text);
             setUsers(users);
         });
     };
@@ -166,21 +203,40 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         setCurrentRoom(null);
     };
 
-    const sendMessage = (message: string) => {
+    const addMessage = (message: IMessage) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+    };
+
+    const addActivity = (activity: IActivityLog) => {
+        setActivities((prevActivities) => [...prevActivities, activity]);
+    };
+
+    const sendMessage = (message: IMessage) => {
         if (socket && currentRoom) {
-            socket.emit("chat_message", {
-                room: currentRoom,
-                message,
-            });
-            setMessages((prevMessages) => [...prevMessages, message]);
+            socket.emit(SocketActions.SEND_MESSAGE, message);
+        } else {
+            toast.error("Socket not connected");
+        }
+    };
+
+    const sendActivity = (activity: IActivityLog) => {
+        if (socket && currentRoom) {
+            socket.emit(SocketActions.ACTIVITY_CHANGE, activity);
+        } else {
+            toast.error("Socket not connected");
         }
     };
 
     const joinRoom = (room: string, username: string) => {
+        setUsername(username);
+        setCurrentRoom(room);
+        localStorage.setItem("joined__roomId", room); // TODO remove harcoded key
+        localStorage.setItem("joined__username", username); // TODO remove harcoded key
         if (socket) {
             socket.emit(SocketActions.JOIN, { roomId: room, username });
+        } else {
+            toast.error("Socket not connected");
         }
-        setCurrentRoom(room);
     };
 
     const syncCode = (code: string) => {
@@ -199,6 +255,28 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket.emit(SocketActions.TEXT_CHANGE, {
                 roomId: currentRoom,
                 text,
+            });
+        } else {
+            toast.error("Socket not connected");
+        }
+    };
+
+    const syncLanguage = (language: string) => {
+        if (socket && socket.connected && currentRoom) {
+            socket.emit(SocketActions.LANGUAGE_CHANGE, {
+                roomId: currentRoom,
+                language,
+            });
+        } else {
+            toast.error("Socket not connected");
+        }
+    };
+
+    const syncInput = (input: string) => {
+        if (socket && socket.connected && currentRoom) {
+            socket.emit(SocketActions.INPUT_CHANGE, {
+                roomId: currentRoom,
+                input,
             });
         } else {
             toast.error("Socket not connected");
@@ -243,13 +321,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         text,
         input,
         output,
+        activities,
         connectSocket,
         disconnectSocket,
         sendMessage,
         joinRoom,
-        addMessage: (message: string) => {
-            setMessages((prevMessages) => [...prevMessages, message]);
-        },
+        addMessage,
         setCode,
         setLanguage,
         setUsername,
@@ -260,6 +337,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         syncText,
         setInput,
         setOutput,
+        setMessages,
+        syncLanguage,
+        syncInput,
+        setActivities,
+        addActivity,
+        sendActivity,
     };
 
     return (

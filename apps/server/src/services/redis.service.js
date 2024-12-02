@@ -67,6 +67,15 @@ class RedisService {
     async smembers(key) {
         return await this.client.smembers(key);
     }
+
+    async rightPush(key, data) {
+        console.log("adding message to reids", key, data);
+        return await this.client.rpush(key, JSON.stringify(data));
+    }
+
+    async leftGet(key) {
+        return await this.client.lrange(key, 0, -1);
+    }
 }
 
 export default RedisService;

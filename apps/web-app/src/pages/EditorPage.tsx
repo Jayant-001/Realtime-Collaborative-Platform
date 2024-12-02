@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TabConfig } from "../utils/types";
 import { Code, MessageSquareCode, Users } from "lucide-react";
 import CodeEditorSection from "../components/code-editor-section/CodeEditor-section";
@@ -9,6 +9,7 @@ import Split from "react-split";
 import toast from "react-hot-toast";
 import { useSocket } from "../context/SocketContext";
 import { useNavigate } from "react-router";
+import ActivityMonitorLog from "../components/ActivityMonitorLog";
 
 const EditorPage = () => {
     const tabs: TabConfig[] = [
@@ -30,6 +31,12 @@ const EditorPage = () => {
             icon: <MessageSquareCode size={16} />,
             component: GroupChatSection,
         },
+        {
+            id: "activity-monitor",
+            label: "Activity Monitor",
+            icon: <MessageSquareCode size={16} />,
+            component: ActivityMonitorLog,
+        },
     ];
 
     const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
@@ -39,7 +46,7 @@ const EditorPage = () => {
         tabs.find((tab) => tab.id === activeTabId)?.component ||
         CodeEditorSection;
 
-    const { currentRoom, leaveRoom } = useSocket();
+    const { currentRoom, leaveRoom, joinRoom, socket } = useSocket();
     const navigate = useNavigate();
 
     const handleCopyRoomID = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -53,6 +60,23 @@ const EditorPage = () => {
         leaveRoom();
         navigate("/");
     };
+
+    useEffect(() => {
+        const roomId = localStorage.getItem("joined__roomId"); // TODO remove harcoded key
+        const username = localStorage.getItem("joined__username"); // TODO remove harcoded key
+
+        if (socket !== null && roomId !== null && username !== null) {
+            joinRoom(roomId, username);
+        }
+        // else {
+        //     toast.error("Join again");
+        //     navigate("/");
+        // }
+
+        return () => {
+            leaveRoom();
+        };
+    }, [socket]);
 
     return (
         <>

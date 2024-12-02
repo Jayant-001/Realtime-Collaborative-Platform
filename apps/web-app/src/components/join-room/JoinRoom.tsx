@@ -13,7 +13,11 @@ const JoinRoom = () => {
     const handleJoinRoom = (e: React.FormEvent) => {
         e.preventDefault();
 
-        joinRoom(roomId, username);
+        localStorage.setItem("joined__roomId", roomId); // TODO remove harcoded key
+        localStorage.setItem("joined__username", username); // TODO remove harcoded key
+        navigate("/editor");
+
+        // joinRoom(roomId, username);
     };
 
     useEffect(() => {
@@ -21,6 +25,14 @@ const JoinRoom = () => {
             navigate("/editor");
         }
     }, [currentRoom, navigate]);
+
+    useEffect(() => {
+        const roomId = localStorage.getItem("joined__roomId"); // TODO remove harcoded key
+        const username = localStorage.getItem("joined__username"); // TODO remove harcoded key
+
+        if (roomId) setRoomId(roomId);
+        if (username) setUsername(username);
+    }, []);
 
     const handleCreateRoom = () => {
         setRoomId(uuidv4());

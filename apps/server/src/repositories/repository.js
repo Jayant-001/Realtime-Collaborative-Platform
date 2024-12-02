@@ -67,6 +67,60 @@ class Repository {
         await this.redisService.del(`${this.usernamePrefix}${socketId}:`);
         await this.redisService.del(`${this.roomIdPrefix}${socketId}:`);
     }
+
+    async setRoomCode(roomId, code) {
+        await this.redisService.set(`room:${roomId}:code`, code);
+    }
+
+    async getRoomCode(roomId) {
+        return await this.redisService.get(`room:${roomId}:code`);
+    }
+
+    async setRoomText(roomId, text) {
+        await this.redisService.set(`room:${roomId}:text`, text);
+    }
+
+    async getRoomText(roomId) {
+        return await this.redisService.get(`room:${roomId}:text`);
+    }
+
+    async addRoomMessage(roomId, message) {
+        const roomKey = `room:${roomId}:messages`;
+        await this.redisService.rightPush(roomKey, message);
+    }
+
+    async getRoomMssages(roomId) {
+        const roomKey = `room:${roomId}:messages`;
+        const messagesList = await this.redisService.leftGet(roomKey);
+        return messagesList.map((message) => JSON.parse(message));
+    }
+
+    async addRoomActivity(roomId, activity) {
+        const roomKey = `room:${roomId}:activities`;
+        await this.redisService.rightPush(roomKey, activity);
+    }
+
+    async getRoomActivities(roomId) {
+        const roomKey = `room:${roomId}:activities`;
+        const activityList = await this.redisService.leftGet(roomKey);
+        return activityList.map((message) => JSON.parse(message));
+    }
+
+    async setRoomCodeLanguage(roomId, value) {
+        await this.redisService.set(`room:${roomId}:language`, value);
+    }
+
+    async getRoomCodeLanguage(roomId) {
+        return await this.redisService.get(`room:${roomId}:language`);
+    }
+
+    async setRoomCodeInput(roomId, value) {
+        await this.redisService.set(`room:${roomId}:code-input`, value);
+    }
+
+    async getRoomCodeInput(roomId) {
+        return await this.redisService.get(`room:${roomId}:code-input`);
+    }
 }
 
 export default Repository;

@@ -1,140 +1,115 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageCircle, Users, Settings } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Send, MessageCircle, Users, Settings } from "lucide-react";
+import { useSocket } from "../../context/SocketContext";
+import { IMessage } from "../../utils/types";
+import { v4 as uuidV4 } from "uuid";
 
-// Enhanced Message Interface
-interface Message {
-  id: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: Date;
-  isCurrentUser: boolean;
-}
-
-// Chat Tab Component with Advanced Messaging
 const GroupChatSection = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState<string>('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+    const { messages, socket, username, currentRoom, sendMessage } =
+        useSocket();
+    const [newMessage, setNewMessage] = useState<string>("");
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock current user (in real app, this would come from authentication context)
-  const currentUser = {
-    id: 'user1',
-    name: 'You'
-  };
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
 
-  // Sample initial messages to demonstrate design
-  useEffect(() => {
-    const initialMessages: Message[] = [
-      {
-        id: '1',
-        senderId: 'user2',
-        senderName: 'John Doe',
-        content: 'Hey everyone, welcome to the chat!',
-        timestamp: new Date(),
-        isCurrentUser: false
-      },
-      {
-        id: '2',
-        senderId: 'user1',
-        senderName: 'You',
-        content: 'Hi there! Excited to be here.',
-        timestamp: new Date(),
-        isCurrentUser: true
-      }
-    ];
-    setMessages(initialMessages);
-  }, []);
+    const sendMessageHandler = () => {
+        if (newMessage.trim() === "") return;
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+        const message: IMessage = {
+            id: uuidV4(),
+            senderId: socket!.id!,
+            username: username!,
+            content: newMessage,
+            timestamp: new Date(),
+            roomId: currentRoom!,
+        };
 
-  const sendMessage = () => {
-    if (newMessage.trim() === '') return;
-
-    const message: Message = {
-      id: `${messages.length + 1}`,
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      content: newMessage,
-      timestamp: new Date(),
-      isCurrentUser: true
+        // setMessages([...messages, message]);
+        sendMessage(message);
+        setNewMessage("");
     };
 
-    setMessages([...messages, message]);
-    setNewMessage('');
-  };
+    // Format timestamp
+    const formatTimestamp = (timestamp: Date) => {
+        const date = new Date(timestamp);
+        return new Intl.DateTimeFormat("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+        }).format(date);
+    };
 
-  // Format timestamp
-  const formatTimestamp = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
-
-  return (
-    <div className="flex flex-col h-full bg-gray-50">
-      {/* Chat Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <div 
-            key={msg.id} 
-            className={`flex ${msg.isCurrentUser ? 'justify-end' : 'justify-start'}`}
-          >
-            <div 
-              className={`
-                max-w-[70%] p-3 rounded-lg shadow-sm
-                ${msg.isCurrentUser 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-white border border-gray-200'}
+    return (
+        <div className="flex flex-col h-full bg-gray-50">
+            {/* Chat Messages Container */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((msg) => (
+                    <div
+                        key={msg.id}
+                        className={`flex ${msg.username == username ? "justify-end" : "justify-start"}`}
+                    >
+                        <div
+                            className={`
+                max-w-[70%] p-2 rounded-lg shadow-sm
+                ${
+                    msg.username == username
+                        ? "bg-blue-500 text-white"
+                        : "bg-white border border-gray-200"
+                }
               `}
-            >
-              {/* Message Header */}
-              <div className="flex justify-between mb-1">
-                <span className="font-semibold text-sm">
-                  {msg.isCurrentUser ? 'You' : msg.senderName}
-                </span>
-                <span className="text-xs opacity-70">
-                  {formatTimestamp(msg.timestamp)}
-                </span>
-              </div>
+                        >
+                            {/* Message Header */}
+                            <div className="flex justify-between mb-1 space-x-1 items-center">
+                                <span className="font-semibold text-sm">
+                                    {msg.username == username
+                                        ? "You"
+                                        : msg.username}
+                                </span>
+                                <span className="text-xs opacity-70">
+                                    {formatTimestamp(msg.timestamp)}
+                                    {/* {new Date(msg.timestamp).toString()} */}
+                                </span>
+                            </div>
 
-              {/* Message Content */}
-              <p className="text-sm">{msg.content}</p>
+                            {/* Message Content */}
+                            <p className="text-sm">{msg.content}</p>
+                        </div>
+                    </div>
+                ))}
+                <div ref={messagesEndRef} />
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
 
-      {/* Message Input Area */}
-      <div className="p-4 bg-white border-t">
-        <div className="flex space-x-2">
-          <input 
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Type your message..."
-            className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
-          />
-          <button 
-            onClick={sendMessage}
-            className="
+            {/* Message Input Area */}
+            <div className="p-4 bg-white border-t">
+                <div className="flex space-x-2">
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) =>
+                            e.key === "Enter" && sendMessageHandler()
+                        }
+                        placeholder="Type your message..."
+                        className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                    />
+                    <button
+                        onClick={sendMessageHandler}
+                        className="
               bg-blue-500 text-white p-2 rounded-lg 
               hover:bg-blue-600 transition-colors
               flex items-center justify-center
             "
-          >
-            <Send size={20} />
-          </button>
+                    >
+                        <Send size={20} />
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default GroupChatSection;

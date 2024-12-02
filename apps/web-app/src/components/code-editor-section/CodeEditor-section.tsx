@@ -4,9 +4,10 @@ import { useSocket } from "../../context/SocketContext";
 import { ChangeEvent } from "react";
 
 const CodeEditorSection = () => {
-    const { input, setInput, output } = useSocket();
+    const { input, setInput, output, syncInput } = useSocket();
     const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
         setInput(e.target.value);
+        syncInput(e.target.value);
     };
 
     return (
