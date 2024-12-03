@@ -11,21 +11,20 @@ const processCode = async (content) => {
         const command = `docker run --rm -v "${tempFolderPath}:/app" gcc:latest sh -c "g++ /app/main.cpp -o /app/main && /app/main < /app/input.txt"`;
 
         exec(command, async (error, stdout, stderr) => {
+            if (stderr) {
+                console.log(`Stderr: ${stderr}`);
+                resolve([false, stderr]);
+                return;
+            }
             if (error) {
                 console.log(`Error: ${error.message}`);
                 reject(`Error: ${error.message}`);
                 return;
             }
 
-            if (stderr) {
-                console.log(`Stderr: ${stderr}`);
-                reject(`Stderr: ${stderr}`);
-                return;
-            }
-
             await folderService.deleteFolder(tempFolderPath);
 
-            resolve(stdout);
+            resolve([true, stdout]);
         });
     });
 };

@@ -71,3 +71,20 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+
+/* Spin icon start */
+.spin-icon {
+  display: inline-block;
+  animation: spin 2s linear infinite; /* Makes the icon spin */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+/* Spin icon ends */
