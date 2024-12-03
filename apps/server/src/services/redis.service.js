@@ -69,7 +69,6 @@ class RedisService {
     }
 
     async rightPush(key, data) {
-        console.log("adding message to reids", key, data);
         return await this.client.rpush(key, JSON.stringify(data));
     }
 

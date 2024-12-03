@@ -3,9 +3,7 @@
 import { Editor } from "@monaco-editor/react";
 import { LANGUAGE_VERSIONS, STARTER_CODE } from "../utils/constants";
 import { useSocket } from "../context/SocketContext";
-import { useEffect, useRef } from "react";
-import axios from "axios";
-import { Loader, LoaderCircle } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 
 type Props = {
     submitTask: (content: any) => void;
@@ -25,24 +23,10 @@ export default function CodeEditor({ submitTask, isLoading }: Props) {
         input,
     } = useSocket();
 
-    // const editorRef = useRef(null);
-
-    // useEffect(() => {
-    //     if (editorRef.current) {
-    //         editorRef.current.on("change", (instance: any, changes: any) => {
-    //             console.log(instance, changes);
-    //         });
-    //     }
-    // }, [editorRef, editorRef.current]);
-
     const handleCodeChange = (code: any) => {
         setCode(code);
         syncCode(code);
     };
-
-    // useEffect(() => {
-    //     console.log(code);
-    // }, []);
 
     const onSelectLanguage = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const choosedLanguage = event.target.value;
@@ -54,9 +38,6 @@ export default function CodeEditor({ submitTask, isLoading }: Props) {
             syncCode(choosedCode);
             syncLanguage(choosedLanguage);
         }
-
-        // setLanguage(language as Language);
-        // setValue(STARTER_CODE[language as Language]);
     };
 
     const handleRunCLick = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -64,24 +45,11 @@ export default function CodeEditor({ submitTask, isLoading }: Props) {
 
         submitTask({
             content: {
-                code: code.trim(),
-                input: input.trim(),
+                code,
+                input,
                 language,
             },
         });
-
-        // const response = await axios.post(
-        //     `http://localhost:4000/api/execute-code`,
-        //     {
-        //         content: {
-        //             code: code.trim(),
-        //             input: input.trim(),
-        //             language,
-        //         },
-        //     }
-        // );
-
-        // console.log(response.data);
     };
 
     return (
@@ -112,10 +80,8 @@ export default function CodeEditor({ submitTask, isLoading }: Props) {
                     className={`px-2 w-20 h-full py-1 hover:bg-opacity-90 bg-orange-500 rounded-md text-white active:opacity-50 disabled:opacity-50`}
                 >
                     {isLoading ? (
-                        // <div className=" inset-0 flex items-center justify-center ">
                         <LoaderCircle className="spin-icon backdrop-blur-lg" />
                     ) : (
-                        // </div>
                         "RUN"
                     )}
                 </button>

@@ -13,7 +13,7 @@ interface TaskResult {
 
 // Custom hook for handling long-running task polling
 const useLongRunningTask = (maxPollingTime: number = 20 * 1000) => {
-    // Default *** seconds
+    // Default 20 seconds
     const [requestId, setRequestId] = useState<string | null>(null);
     const [result, setResult] = useState<TaskResult | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +30,6 @@ const useLongRunningTask = (maxPollingTime: number = 20 * 1000) => {
                 "http://localhost:4000/api/execute-code",
                 taskData
             );
-
-            console.log(response.data.requestId);
 
             // Store the request ID
             setRequestId(response.data.requestId);
@@ -50,9 +48,7 @@ const useLongRunningTask = (maxPollingTime: number = 20 * 1000) => {
                 `http://localhost:4000/api/code-result/${requestId}`
             );
             const taskResult = response.data;
-
-            console.log("Task result", taskResult);
-
+            
             // Update result based on status
             if (taskResult.status === "success") {
                 setResult(taskResult.result);
