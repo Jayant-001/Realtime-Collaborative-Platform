@@ -11,6 +11,7 @@ import { SocketActions } from "../utils/SocketActions";
 import toast from "react-hot-toast";
 import { IActivityLog, IMessage } from "../utils/types";
 import { STARTER_CODE } from "../utils/constants";
+const SERVER_URL = import.meta.env.VITE_SERVER_BASE_URL;
 
 interface IClient {
     socketId: string;
@@ -86,10 +87,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     useEffect(() => {
         codeRef.current = code;
         textRef.current = text;
+        console.log("server url", SERVER_URL);
     }, [code, text]);
 
     const connectSocket = () => {
-        const socket = io("http://localhost:4000", {
+        const socket = io(SERVER_URL, {
             // TODO: Update code to read URL from env
             reconnection: true,
             reconnectionAttempts: 5,

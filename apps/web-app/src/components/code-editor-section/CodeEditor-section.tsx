@@ -3,6 +3,7 @@ import CodeEditor from "../CodeEditor";
 import { useSocket } from "../../context/SocketContext";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import axios from "axios";
+const SERVER_URL = import.meta.env.VITE_SERVER_BASE_URL;
 
 // Define the type for the task result
 interface TaskResult {
@@ -27,7 +28,7 @@ const useLongRunningTask = (maxPollingTime: number = 20 * 1000) => {
 
             // Send task to backend
             const response = await axios.post(
-                "http://localhost:4000/api/execute-code",
+                `${SERVER_URL}/api/execute-code`,
                 taskData
             );
 
@@ -45,10 +46,10 @@ const useLongRunningTask = (maxPollingTime: number = 20 * 1000) => {
 
         try {
             const response = await axios.get(
-                `http://localhost:4000/api/code-result/${requestId}`
+                `${SERVER_URL}/api/code-result/${requestId}`
             );
             const taskResult = response.data;
-            
+
             // Update result based on status
             if (taskResult.status === "success") {
                 setResult(taskResult.result);
