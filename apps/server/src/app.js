@@ -76,8 +76,8 @@ class App {
             createExecuteRouteRoutes(this.bullMQService, this.redisService)
         );
 
-        this.app.get("/health-check", (req, res) => {
-            const name = this.redisService.get("name");
+        this.app.get("/health-check", async (req, res) => {
+            const name = await this.redisService.get("name");
             return res.status(200).json({
                 message: "Hello from server",
                 name,
