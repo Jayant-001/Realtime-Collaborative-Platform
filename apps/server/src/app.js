@@ -76,6 +76,14 @@ class App {
             createExecuteRouteRoutes(this.bullMQService, this.redisService)
         );
 
+        this.app.get("/health-check", (req, res) => {
+            const name = this.redisService.get("name");
+            return res.status(200).json({
+                message: "Hello from server",
+                name,
+            });
+        });
+
         // You can easily add more routes here
         // this.app.use('/api/users', createUserRoutes());
         // this.app.use('/api/rooms', createRoomRoutes());
