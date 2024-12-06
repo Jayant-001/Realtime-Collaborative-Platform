@@ -2,13 +2,26 @@ import Redis from "ioredis";
 import processCode from "./codeProcessor.js";
 import logger from "@repo/logger/index.js";
 import { Worker } from "bullmq";
+import dotenv from "dotenv";
 
-const redis = new Redis({
-    host: "localhost",
-    port: 6379,
-});
+dotenv.config();
 
-const queueName = "myQueue";
+const REDIS_URL = process.env.REDIS_URL;
+const QUEUE_NAME = process.env.QUEUE_NAME;
+
+// Here add check if redis_url or queue_name is empty then log and then return from the process
+// Check if REDIS_URL or QUEUE_NAME is missing
+if (!REDIS_URL || !QUEUE_NAME) {
+    logger.error(
+        "Missing REDIS_URL or QUEUE_NAME in environment variables. Exiting process... =>",
+        { REDIS_URL, QUEUE_NAME }
+    );
+    process.exit(1); // Exit with a non-zero code to indicate failure
+}
+
+const redis = new Redis(process.env.REDIS_URL);
+
+const queueName = process.env.QUEUE_NAME || "defaultQueue";
 
 const processJob = async (job) => {
     // Step 1: Process the message (this is where you put your task processing logic)
@@ -54,10 +67,7 @@ const processJob = async (job) => {
 };
 
 const worker = new Worker(queueName, processJob, {
-    connection: {
-        host: "localhost",
-        port: 6379,
-    },
+    connection: process.env.REDIS_URL,
 });
 
 // Log a message indicating that the worker is running and listening to the queue

@@ -1,5 +1,3 @@
-import RedisService from "../services/redis.service.js";
-
 class RoomRepository {
     PREFIX = "room:";
 

@@ -15,3 +15,4 @@ export const newRedisConfig = {
     host: "localhost",
     port: 6379,
 };
+

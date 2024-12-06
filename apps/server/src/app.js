@@ -9,7 +9,6 @@ import morgan from "morgan";
 import logger from "@repo/logger/index.js";
 import { createExecuteRouteRoutes } from "./routes/execute-code.route.js";
 import BullMQService from "./services/bullmq.service.js";
-import { newRedisConfig } from "./config/redis.config.js";
 import { createAdapter } from "@socket.io/redis-adapter";
 import Redis from "ioredis";
 
@@ -21,7 +20,7 @@ class App {
     constructor() {
         this.app = express();
         this.httpServer = createServer(this.app);
-        const pubClient = new Redis(newRedisConfig);
+        const pubClient = new Redis(process.env.REDIS_URL);
         const subClient = pubClient.duplicate();
         this.io = new Server(this.httpServer, {
             cors: {
@@ -32,7 +31,7 @@ class App {
         });
 
         this.redisService = new RedisService();
-        this.bullMQService = new BullMQService(newRedisConfig, "myQueue"); // TODO: Remove hard-coded queue name
+        this.bullMQService = new BullMQService(); // TODO: Remove hard-coded queue name
         this.socketController = new SocketController(
             this.io,
             this.redisService

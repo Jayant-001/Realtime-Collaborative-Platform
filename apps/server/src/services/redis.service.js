@@ -1,11 +1,10 @@
 import Redis from "ioredis";
-import { newRedisConfig } from "../config/redis.config.js";
 
 class RedisService {
     constructor() {
-        this.publisher = new Redis(newRedisConfig);
-        this.subscriber = new Redis(newRedisConfig);
-        this.client = new Redis(newRedisConfig);
+        this.publisher = new Redis(process.env.REDIS_URL);
+        this.subscriber = new Redis(process.env.REDIS_URL);
+        this.client = new Redis(process.env.REDIS_URL);
     }
 
     async publish(channel, message) {

@@ -2,14 +2,17 @@ import { Queue } from "bullmq";
 import logger from "@repo/logger";
 
 class BullMQService {
-    constructor(redisConfig, queueName) {
+    constructor() {
         // Configure the Redis connection
-        this.queueName = queueName || "defaultQueue";
+        this.queueName = process.env.QUEUE_NAME || "defaultQueue";
 
         // Create a queue with the name provided
         this.queue = new Queue(this.queueName, {
-            connection: redisConfig,
+            connection: process.env.REDIS_URL,
         });
+        logger.info(
+            `BullMQ server is redy to push message in queue: '${this.queueName}'`
+        );
     }
 
     /**
