@@ -6,7 +6,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "servers": "turbo run dev --filter=worker --filter=server"
+    "servers": "turbo run dev --filter=worker --filter=server",
+    "my-app": "turbo run dev --filter=worker --filter=server --filter=web-app"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
