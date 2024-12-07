@@ -87,7 +87,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     useEffect(() => {
         codeRef.current = code;
         textRef.current = text;
-        console.log("server url", SERVER_URL);
     }, [code, text]);
 
     const connectSocket = () => {

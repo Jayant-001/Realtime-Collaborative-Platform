@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import logger from "@repo/logger";
+import Redis from "ioredis";
 
 class BullMQService {
     constructor() {
@@ -8,7 +9,7 @@ class BullMQService {
 
         // Create a queue with the name provided
         this.queue = new Queue(this.queueName, {
-            connection: process.env.REDIS_URL,
+            connection: new Redis(process.env.REDIS_URL),
         });
         logger.info(
             `BullMQ server is redy to push message in queue: '${this.queueName}'`
