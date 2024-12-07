@@ -41,7 +41,7 @@ const processJob = async (job) => {
         // Getting status and result(output) after executing the code
         const [success, result] = await processCode(parsedMessage.content);
 
-        logger.info(`Execution status for job.id: ${success}`);
+        logger.info(`Job ID: ${job.id}, execution status: ${success}`);
 
         const resultKey = `code-result:${parsedMessage.requestId}`;
 
